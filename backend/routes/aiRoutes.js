@@ -11,19 +11,20 @@ import {
   generatePitch,
   recommendTeamRoles,
 } from '../controllers/aiController.js';
-import { optionalAuth } from '../middleware/authMiddleware.js';
+import { requireAuth } from '../middleware/authMiddleware.js';
 
 const router = Router();
 
-router.post('/projects/:id/analyze', optionalAuth, analyzeProblem);
-router.post('/projects/:id/generate-ideas', optionalAuth, generateIdeas);
-router.get('/projects/:id/compare', optionalAuth, compareIdeas);
-router.post('/projects/:id/select-idea', optionalAuth, selectIdea);
-router.post('/projects/:id/differentiators', optionalAuth, generateDifferentiators);
-router.post('/projects/:id/tech-stack', optionalAuth, generateTechStack);
-router.post('/projects/:id/architecture', optionalAuth, generateArchitecture);
-router.post('/projects/:id/roadmap', optionalAuth, generateRoadmap);
-router.post('/projects/:id/pitch', optionalAuth, generatePitch);
-router.post('/projects/:id/team-roles', optionalAuth, recommendTeamRoles);
+// Protected AI workflow endpoints requiring valid project ownership
+router.post('/projects/:id/analyze', requireAuth, analyzeProblem);
+router.post('/projects/:id/generate-ideas', requireAuth, generateIdeas);
+router.get('/projects/:id/compare', requireAuth, compareIdeas);
+router.post('/projects/:id/select-idea', requireAuth, selectIdea);
+router.post('/projects/:id/differentiators', requireAuth, generateDifferentiators);
+router.post('/projects/:id/tech-stack', requireAuth, generateTechStack);
+router.post('/projects/:id/architecture', requireAuth, generateArchitecture);
+router.post('/projects/:id/roadmap', requireAuth, generateRoadmap);
+router.post('/projects/:id/pitch', requireAuth, generatePitch);
+router.post('/projects/:id/team-roles', requireAuth, recommendTeamRoles);
 
 export default router;

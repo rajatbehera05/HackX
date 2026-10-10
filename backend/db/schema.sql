@@ -71,9 +71,9 @@ CREATE TABLE IF NOT EXISTS public.selected_solutions (
     judge_pitch_reasons JSONB DEFAULT '[]'::jsonb,
     tech_stack JSONB DEFAULT '{}'::jsonb,
     architecture JSONB DEFAULT '{}'::jsonb,
-    roadmap JSONB DEFAULT '[]'::jsonb,
+    roadmap JSONB DEFAULT '{}'::jsonb,
     pitch JSONB DEFAULT '{}'::jsonb,
-    team_roles JSONB DEFAULT '[]'::jsonb,
+    team_roles JSONB DEFAULT '{}'::jsonb,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     CONSTRAINT uq_project_solution UNIQUE (project_id)
@@ -133,6 +133,10 @@ CREATE POLICY "Users can view analyses of their projects"
 CREATE POLICY "Users can insert analyses for their projects"
     ON public.analyses FOR INSERT
     WITH CHECK (EXISTS (SELECT 1 FROM public.projects WHERE projects.id = analyses.project_id AND projects.user_id = auth.uid()));
+
+CREATE POLICY "Users can update analyses of their projects"
+    ON public.analyses FOR UPDATE
+    USING (EXISTS (SELECT 1 FROM public.projects WHERE projects.id = analyses.project_id AND projects.user_id = auth.uid()));
 
 CREATE POLICY "Users can delete analyses of their projects"
     ON public.analyses FOR DELETE

@@ -1,13 +1,5 @@
-import { supabaseAdmin } from '../utils/supabaseClient.js';
+import { isSupabaseConfigured } from '../utils/supabaseClient.js';
 import { memoryStore } from '../utils/memoryStore.js';
-
-const isSupabaseConfigured = () => {
-  return Boolean(
-    process.env.SUPABASE_URL &&
-    process.env.SUPABASE_URL !== 'https://placeholder.supabase.co' &&
-    (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY)
-  );
-};
 
 export const createProject = async (req, res, next) => {
   try {
@@ -29,7 +21,11 @@ export const createProject = async (req, res, next) => {
     const projectTitle = title?.trim() ||
       (problemStatement.length > 50 ? problemStatement.substring(0, 47) + '...' : problemStatement);
 
-    if (isSupabaseConfigured() && req.supabase) {
+    if (isSupabaseConfigured()) {
+      if (!req.supabase) {
+        return res.status(401).json({ error: 'Authentication required for Supabase operations.' });
+      }
+
       const { data, error } = await req.supabase
         .from('projects')
         .insert({
@@ -49,7 +45,7 @@ export const createProject = async (req, res, next) => {
       return res.status(201).json({ project: data });
     }
 
-    // Memory Store fallback
+    // Dev In-Memory Mode
     const project = memoryStore.createProject({
       userId,
       title: projectTitle,
@@ -69,9 +65,13 @@ export const createProject = async (req, res, next) => {
 
 export const getProjects = async (req, res, next) => {
   try {
-    const userId = req.user?.id || 'dev-user';
+    const userId = req.user?.id;
 
-    if (isSupabaseConfigured() && req.supabase) {
+    if (isSupabaseConfigured()) {
+      if (!req.supabase) {
+        return res.status(401).json({ error: 'Authentication required for Supabase operations.' });
+      }
+
       const { data, error } = await req.supabase
         .from('projects')
         .select(`
@@ -85,6 +85,7 @@ export const getProjects = async (req, res, next) => {
       return res.json({ projects: data });
     }
 
+    // Dev In-Memory Mode
     const projects = memoryStore.getProjects(userId);
     return res.json({ projects });
   } catch (err) {
@@ -95,8 +96,13 @@ export const getProjects = async (req, res, next) => {
 export const getProjectById = async (req, res, next) => {
   try {
     const { id } = req.params;
+    const userId = req.user?.id;
 
-    if (isSupabaseConfigured() && req.supabase) {
+    if (isSupabaseConfigured()) {
+      if (!req.supabase) {
+        return res.status(401).json({ error: 'Authentication required for Supabase operations.' });
+      }
+
       const { data: project, error: pError } = await req.supabase
         .from('projects')
         .select('*')
@@ -136,7 +142,8 @@ export const getProjectById = async (req, res, next) => {
       });
     }
 
-    const project = memoryStore.getProject(id);
+    // Dev In-Memory Mode
+    const project = memoryStore.getProject(id, userId);
     if (!project) {
       return res.status(404).json({ error: 'Project not found' });
     }
@@ -150,8 +157,13 @@ export const getProjectById = async (req, res, next) => {
 export const deleteProject = async (req, res, next) => {
   try {
     const { id } = req.params;
+    const userId = req.user?.id;
 
-    if (isSupabaseConfigured() && req.supabase) {
+    if (isSupabaseConfigured()) {
+      if (!req.supabase) {
+        return res.status(401).json({ error: 'Authentication required for Supabase operations.' });
+      }
+
       const { error } = await req.supabase
         .from('projects')
         .delete()
@@ -161,8 +173,72 @@ export const deleteProject = async (req, res, next) => {
       return res.json({ success: true, message: 'Project deleted successfully' });
     }
 
-    memoryStore.deleteProject(id);
+    // Dev In-Memory Mode
+    const deleted = memoryStore.deleteProject(id, userId);
+    if (!deleted) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
     return res.json({ success: true, message: 'Project deleted successfully' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateProject = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?.id;
+    const {
+      title,
+      problemStatement,
+      teamSize,
+      teamSkills,
+      developmentTime,
+      budget,
+      hardware,
+    } = req.body;
+
+    if (isSupabaseConfigured()) {
+      if (!req.supabase) {
+        return res.status(401).json({ error: 'Authentication required for Supabase operations.' });
+      }
+
+      const updates = {};
+      if (title !== undefined) updates.title = title.trim();
+      if (problemStatement !== undefined) updates.problem_statement = problemStatement.trim();
+      if (teamSize !== undefined) updates.team_size = teamSize;
+      if (teamSkills !== undefined) updates.team_skills = teamSkills;
+      if (developmentTime !== undefined) updates.development_time = developmentTime;
+      if (budget !== undefined) updates.budget = budget;
+      if (hardware !== undefined) updates.hardware = hardware;
+      updates.updated_at = new Date().toISOString();
+
+      const { data, error } = await req.supabase
+        .from('projects')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return res.json({ project: data });
+    }
+
+    // Dev In-Memory Mode
+    const updates = {};
+    if (title !== undefined) updates.title = title.trim();
+    if (problemStatement !== undefined) updates.problem_statement = problemStatement.trim();
+    if (teamSize !== undefined) updates.team_size = teamSize;
+    if (teamSkills !== undefined) updates.team_skills = teamSkills;
+    if (developmentTime !== undefined) updates.development_time = developmentTime;
+    if (budget !== undefined) updates.budget = budget;
+    if (hardware !== undefined) updates.hardware = hardware;
+
+    const project = memoryStore.updateProject(id, userId, updates);
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+    return res.json({ project });
   } catch (err) {
     next(err);
   }

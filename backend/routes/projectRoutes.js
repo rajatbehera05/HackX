@@ -3,16 +3,19 @@ import {
   createProject,
   getProjects,
   getProjectById,
+  updateProject,
   deleteProject,
 } from '../controllers/projectController.js';
-import { optionalAuth } from '../middleware/authMiddleware.js';
+import { requireAuth } from '../middleware/authMiddleware.js';
 
 const router = Router();
 
-// Allow optional auth so user can use the platform immediately or attach session
-router.post('/', optionalAuth, createProject);
-router.get('/', optionalAuth, getProjects);
-router.get('/:id', optionalAuth, getProjectById);
-router.delete('/:id', optionalAuth, deleteProject);
+// Protected project endpoints requiring authenticated user session
+router.post('/', requireAuth, createProject);
+router.get('/', requireAuth, getProjects);
+router.get('/:id', requireAuth, getProjectById);
+router.put('/:id', requireAuth, updateProject);
+router.patch('/:id', requireAuth, updateProject);
+router.delete('/:id', requireAuth, deleteProject);
 
 export default router;

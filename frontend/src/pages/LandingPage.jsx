@@ -1,108 +1,154 @@
 import React from 'react';
 import {
-  Sparkles,
   ArrowRight,
+  Plus,
+  GitBranch,
   Layers,
   Cpu,
-  GitBranch,
+  BarChart2,
   Calendar,
   Mic,
   ShieldCheck,
-  CheckCircle,
-  Zap,
-  BookOpen,
+  CheckCircle2,
+  Terminal,
+  FileCode,
 } from 'lucide-react';
 
-export default function LandingPage({ onStartPlanning, onOpenPreset }) {
-  const steps = [
-    { title: 'Deconstruct', desc: 'Dissect functional requirements, hidden constraints, and technical hurdles.' },
-    { title: 'Synthesize Ideas', desc: 'Generate 3–5 fundamentally distinct architectural approaches.' },
-    { title: 'Deterministic Scoring', desc: 'Rank feasibility, innovation, and demo wow with weighted math.' },
-    { title: 'Engineer Moats', desc: 'Formulate defensible differentiators and key arguments for judges.' },
-    { title: 'Tailor Tech Stack', desc: 'Pragmatic tech selections matched to your exact team skills and timeline.' },
-    { title: 'Interactive Flow', desc: 'Live visual system DAG mapped with React Flow nodes & protocols.' },
-    { title: 'Hackathon Roadmap', desc: 'Milestone sprints with MVP rules avoiding classic hackathon traps.' },
-    { title: 'Judge Pitch Suite', desc: '30s elevator, 1m quick-fire, 3m presentation, and slide deck outline.' },
+export default function LandingPage({ onStartPlanning }) {
+  const stages = [
+    {
+      num: '01',
+      title: 'Problem Deconstruction',
+      desc: 'Parses raw hackathon prompts into functional requirements, technical barriers, and user constraints.',
+      icon: FileCode,
+    },
+    {
+      num: '02',
+      title: 'Architecture Syntheses',
+      desc: 'Generates 3–5 distinct solution vectors differing in architecture, hardware dependency, and complexity.',
+      icon: Layers,
+    },
+    {
+      num: '03',
+      title: 'Deterministic Matrix',
+      desc: 'Computes weighted multi-criteria scores (feasibility 25%, innovation 20%, impact 20%, demo wow 15%, cost 10%, scalability 10%).',
+      icon: BarChart2,
+    },
+    {
+      num: '04',
+      title: 'Competitive Moats',
+      desc: 'Formulates concrete differentiators and defense arguments specifically prepared for judge inquiries.',
+      icon: ShieldCheck,
+    },
+    {
+      num: '05',
+      title: 'Tech Stack Formulation',
+      desc: 'Selects pragmatic libraries and APIs calibrated to your available team skills and hackathon timeline.',
+      icon: Cpu,
+    },
+    {
+      num: '06',
+      title: 'Dataflow Architecture',
+      desc: 'Generates an interactive React Flow DAG with client, service, database, and hardware node interfaces.',
+      icon: GitBranch,
+    },
+    {
+      num: '07',
+      title: 'Milestone Roadmap',
+      desc: 'Breaks execution into chronological sprint phases with strict MVP guidelines avoiding overengineering.',
+      icon: Calendar,
+    },
+    {
+      num: '08',
+      title: 'Judge Pitch Suite',
+      desc: 'Provides structured pitch assets: 30s elevator pitch, 1m live script, 3m presentation, and a 7-slide deck.',
+      icon: Mic,
+    },
   ];
 
   return (
-    <div className="w-full space-y-16 py-8 sm:py-12">
-      {/* Hero Section */}
-      <div className="max-w-4xl mx-auto text-center px-4 space-y-6">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-xs font-semibold text-indigo-400">
-          <Sparkles className="w-3.5 h-3.5" />
-          <span>The Decision Support Engine for Hackathon Winners</span>
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
+      {/* Workspace Hero */}
+      <div className="border border-[#1e2638] bg-[#111622] rounded-lg p-6 sm:p-10 space-y-6">
+        <div className="flex items-center gap-2 font-mono text-[11px] text-blue-400">
+          <Terminal className="w-3.5 h-3.5" />
+          <span>HACKATHON_PLANNING_ENGINE // v1.0</span>
         </div>
 
-        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white tracking-tight leading-[1.15]">
-          Turn Raw Problem Statements Into{' '}
-          <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
-            Winning Blueprints
-          </span>
-        </h1>
+        <div className="max-w-3xl space-y-3">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-100 tracking-tight leading-tight">
+            Decision-support & technical blueprinting for hackathons.
+          </h1>
+          <p className="text-sm sm:text-base text-slate-400 leading-relaxed">
+            HackX helps teams deconstruct challenge prompts, compare architectural trade-offs with deterministic scoring, plot system DAGs, and assemble complete judge presentations before writing code.
+          </p>
+        </div>
 
-        <p className="text-base sm:text-lg text-slate-300 max-w-2xl mx-auto leading-relaxed">
-          Not a generic chatbot. HackX is a structured AI planning platform that transforms vague challenge prompts into practical, differentiated, and technically validated project architectures.
-        </p>
-
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+        <div className="flex flex-wrap items-center gap-3 pt-1">
           <button
             onClick={onStartPlanning}
-            className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold text-sm shadow-xl shadow-indigo-600/25 flex items-center justify-center gap-2 transition-all hover:scale-[1.02]"
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs sm:text-sm rounded-md flex items-center gap-2 shadow-xs transition-colors"
           >
-            <Sparkles className="w-4 h-4" />
-            <span>Launch Solution Engine</span>
+            <Plus className="w-4 h-4" />
+            <span>Create New Plan</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Feature Highlights Pills */}
-        <div className="flex flex-wrap items-center justify-center gap-4 pt-4 text-xs text-slate-400">
-          <span className="flex items-center gap-1.5">
-            <CheckCircle className="w-4 h-4 text-emerald-400" />
-            Deterministic Algorithm Scoring
-          </span>
-          <span className="flex items-center gap-1.5">
-            <CheckCircle className="w-4 h-4 text-emerald-400" />
-            Interactive React Flow DAGs
-          </span>
-          <span className="flex items-center gap-1.5">
-            <CheckCircle className="w-4 h-4 text-emerald-400" />
-            Zero-Leak Backend AI Layer
-          </span>
+        <div className="pt-4 border-t border-[#1e2638] flex flex-wrap items-center gap-6 text-xs text-slate-400">
+          <div className="flex items-center gap-1.5">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Weighted Scoring Engine</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Interactive React Flow DAGs</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Structured Pitch & Slide Decks</span>
+          </div>
         </div>
       </div>
 
-      {/* 8-Stage Blueprint Process */}
-      <div className="max-w-6xl mx-auto px-4">
-        <div className="text-center mb-8">
-          <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-            The 8-Stage Hackathon Formulation Workflow
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1">
-            Move step-by-step from raw problem statement to judge-ready demo
-          </p>
+      {/* The 8-Stage Architecture Pipeline */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between border-b border-[#1e2638] pb-3">
+          <div>
+            <h2 className="text-sm sm:text-base font-semibold text-slate-200">
+              Structured Planning Pipeline
+            </h2>
+            <p className="text-xs text-slate-400">
+              Each stage generates verified artifacts based on team timeline, skillsets, and hardware constraints
+            </p>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {steps.map((st, i) => (
-            <div
-              key={i}
-              className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-slate-700 transition-all flex flex-col justify-between group"
-            >
-              <div>
-                <span className="text-xs font-mono font-bold text-indigo-400 mb-2 block">
-                  0{i + 1}
-                </span>
-                <h3 className="text-sm font-bold text-white group-hover:text-indigo-300 transition-colors mb-1">
-                  {st.title}
-                </h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  {st.desc}
-                </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+          {stages.map((st) => {
+            const Icon = st.icon;
+            return (
+              <div
+                key={st.num}
+                className="p-4 rounded-md bg-[#111622] border border-[#1e2638] hover:border-[#2b374e] transition-colors flex flex-col justify-between space-y-3"
+              >
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-[11px] text-blue-400 font-semibold">
+                      {st.num}
+                    </span>
+                    <Icon className="w-4 h-4 text-slate-500" />
+                  </div>
+                  <h3 className="text-xs font-semibold text-slate-200">
+                    {st.title}
+                  </h3>
+                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                    {st.desc}
+                  </p>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

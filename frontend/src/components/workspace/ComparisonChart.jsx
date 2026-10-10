@@ -6,123 +6,269 @@ import {
   PolarAngleAxis,
   PolarRadiusAxis,
   ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Legend,
 } from 'recharts';
-import { Award, CheckCircle, Flame, Sparkles } from 'lucide-react';
+import { CheckCircle2, Award } from 'lucide-react';
 
-const COLORS = ['#6366f1', '#06b6d4', '#10b981', '#f59e0b', '#ec4899'];
+const PALETTE = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
 
 export default function ComparisonChart({ ideas, onSelectIdea, selectedIdeaId }) {
   if (!ideas || ideas.length === 0) {
-    return <div className="text-slate-500 text-sm">No ideas to compare yet.</div>;
+    return (
+      <div className="p-8 rounded-md bg-[#111622] border border-[#1e2638] text-xs text-slate-400 text-center">
+        No solution ideas generated yet. Complete step 2 to run deterministic scoring.
+      </div>
+    );
   }
 
-  // Multi-dimensional metrics for radar comparison
-  const criteria = [
-    { key: 'feasibility', label: 'Feasibility (25%)' },
-    { key: 'innovation', label: 'Innovation (20%)' },
-    { key: 'impact', label: 'Impact (20%)' },
-    { key: 'demo', label: 'Demo (15%)' },
-    { key: 'cost', label: 'Cost Value (10%)' },
-    { key: 'scalability', label: 'Scalability (10%)' },
+  // Scoring criteria weights from specification:
+  // Feasibility 25%, Innovation 20%, Impact 20%, Demo 15%, Cost 10%, Scalability 10%
+  const CRITERIA = [
+    { key: 'feasibility', label: 'Feasibility', weight: '25%', factor: 0.25 },
+    { key: 'innovation', label: 'Innovation', weight: '20%', factor: 0.20 },
+    { key: 'impact', label: 'Impact', weight: '20%', factor: 0.20 },
+    { key: 'demo', label: 'Demo Potential', weight: '15%', factor: 0.15 },
+    { key: 'cost', label: 'Cost Value', weight: '10%', factor: 0.10 },
+    { key: 'scalability', label: 'Scalability', weight: '10%', factor: 0.10 },
   ];
 
-  const radarData = criteria.map((c) => {
-    const item = { metric: c.label };
+  // Prepare radar chart data
+  const radarData = CRITERIA.map((crit) => {
+    const item = { metric: `${crit.label} (${crit.weight})` };
     ideas.forEach((idea, idx) => {
-      const score =
-        c.key === 'feasibility' ? (idea.feasibility_score || idea.feasibilityScore) :
-        c.key === 'innovation' ? (idea.innovation_score || idea.innovationScore) :
-        c.key === 'impact' ? (idea.impact_score || idea.impactScore) :
-        c.key === 'demo' ? (idea.demo_score || idea.demoScore) :
-        c.key === 'cost' ? (idea.cost_score || idea.costScore) :
-        (idea.scalability_score || idea.scalabilityScore);
-      item[`Idea ${idx + 1}`] = score || 5;
+      let score = 5;
+      if (crit.key === 'feasibility') score = idea.feasibility_score ?? idea.feasibilityScore ?? 5;
+      else if (crit.key === 'innovation') score = idea.innovation_score ?? idea.innovationScore ?? 5;
+      else if (crit.key === 'impact') score = idea.impact_score ?? idea.impactScore ?? 5;
+      else if (crit.key === 'demo') score = idea.demo_score ?? idea.demoScore ?? 5;
+      else if (crit.key === 'cost') score = idea.cost_score ?? idea.costScore ?? 5;
+      else if (crit.key === 'scalability') score = idea.scalability_score ?? idea.scalabilityScore ?? 5;
+
+      item[`Idea ${idx + 1}`] = Number(score);
     });
     return item;
   });
 
-  // Calculate weighted total for each idea deterministically
-  const ranked = [...ideas].map((idea, idx) => {
-    const feas = Number(idea.feasibility_score || idea.feasibilityScore || 5);
-    const inno = Number(idea.innovation_score || idea.innovationScore || 5);
-    const imp = Number(idea.impact_score || idea.impactScore || 5);
-    const demo = Number(idea.demo_score || idea.demoScore || 5);
-    const cost = Number(idea.cost_score || idea.costScore || 5);
-    const scale = Number(idea.scalability_score || idea.scalabilityScore || 5);
+  // Calculate weighted totals for deterministic ranking
+  const rankedIdeas = ideas.map((idea, idx) => {
+    const feas = Number(idea.feasibility_score ?? idea.feasibilityScore ?? 5);
+    const inno = Number(idea.innovation_score ?? idea.innovationScore ?? 5);
+    const imp = Number(idea.impact_score ?? idea.impactScore ?? 5);
+    const demo = Number(idea.demo_score ?? idea.demoScore ?? 5);
+    const cost = Number(idea.cost_score ?? idea.costScore ?? 5);
+    const scale = Number(idea.scalability_score ?? idea.scalabilityScore ?? 5);
 
-    const weighted = (feas * 0.25) + (inno * 0.20) + (imp * 0.20) + (demo * 0.15) + (cost * 0.10) + (scale * 0.10);
-    const totalScore = Math.round(weighted * 10 * 10) / 10;
+    const weightedScore =
+      feas * 0.25 +
+      inno * 0.20 +
+      imp * 0.20 +
+      demo * 0.15 +
+      cost * 0.10 +
+      scale * 0.10;
+
+    const totalScore = Math.round(weightedScore * 10 * 10) / 10;
 
     return {
       ...idea,
+      originalIndex: idx,
       calculatedTotal: totalScore,
-      color: COLORS[idx % COLORS.length],
+      color: PALETTE[idx % PALETTE.length],
     };
-  }).sort((a, b) => b.calculatedTotal - a.calculatedTotal);
+  });
 
-  const topPick = ranked[0];
+  const sortedRanked = [...rankedIdeas].sort((a, b) => b.calculatedTotal - a.calculatedTotal);
+  const topPick = sortedRanked[0];
 
   return (
     <div className="space-y-6">
-      {/* Top Pick Recommendation Highlight */}
+      {/* Top Pick Recommendation Banner */}
       {topPick && (
-        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-indigo-950/80 via-slate-900 to-purple-950/80 border border-indigo-500/30 shadow-xl relative overflow-hidden">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400 shrink-0">
-                <Award className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-indigo-500 text-white">
-                    Algorithm Recommendation
-                  </span>
-                  <span className="text-xs font-mono font-bold text-indigo-300">
-                    Weighted Fit: {topPick.calculatedTotal}/100
-                  </span>
-                </div>
-                <h3 className="text-base sm:text-lg font-bold text-white">{topPick.title}</h3>
-                <p className="text-xs text-slate-300 mt-0.5 line-clamp-2">
-                  {topPick.recommendation_reason || topPick.concept}
-                </p>
-              </div>
+        <div className="p-4 sm:p-5 rounded-md bg-[#111622] border border-[#1e2638] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="space-y-1 max-w-2xl">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+                <Award className="w-3 h-3" />
+                DETERMINISTIC TOP PICK
+              </span>
+              <span className="text-xs font-mono text-slate-400">
+                Score: <strong className="text-slate-100">{topPick.calculatedTotal}</strong>/100
+              </span>
             </div>
-
-            <button
-              onClick={() => onSelectIdea(topPick.id)}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shadow-md ${
-                selectedIdeaId === topPick.id
-                  ? 'bg-emerald-600 text-white cursor-default'
-                  : 'bg-indigo-600 hover:bg-indigo-500 text-white'
-              }`}
-            >
-              {selectedIdeaId === topPick.id ? '✓ Selected as Plan Base' : 'Select Top Recommendation'}
-            </button>
+            <h4 className="text-sm sm:text-base font-bold text-slate-100">
+              {topPick.title}
+            </h4>
+            <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
+              {topPick.recommendation_reason || topPick.concept || topPick.description}
+            </p>
           </div>
+
+          <button
+            onClick={() => onSelectIdea(topPick.id)}
+            className={`px-3.5 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap transition-colors ${
+              selectedIdeaId === topPick.id
+                ? 'bg-[#1a2333] text-emerald-400 border border-emerald-500/30 cursor-default flex items-center gap-1.5'
+                : 'bg-blue-600 hover:bg-blue-500 text-white'
+            }`}
+          >
+            {selectedIdeaId === topPick.id ? (
+              <>
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Selected as Active Plan</span>
+              </>
+            ) : (
+              'Select Top Recommendation'
+            )}
+          </button>
         </div>
       )}
 
-      {/* Visual Chart + Score Breakdown */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Radar Comparison Chart */}
-        <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-lg">
-          <div className="flex items-center justify-between mb-4">
-            <h4 className="text-sm font-semibold text-white flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-indigo-400" />
-              Multi-Vector Radar Comparison
+      {/* Decision Matrix Table */}
+      <div className="border border-[#1e2638] rounded-md overflow-hidden bg-[#111622]">
+        <div className="p-3.5 border-b border-[#1e2638] bg-[#0d121c] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider font-mono">
+              Decision Scoring Matrix
             </h4>
-            <div className="flex items-center gap-3 text-xs">
-              {ideas.map((_, i) => (
+            <p className="text-[11px] text-slate-400">
+              Deterministic weights applied directly to AI-assessed dimensions
+            </p>
+          </div>
+          <div className="text-[10px] font-mono text-slate-500">
+            F:25% + I:20% + Imp:20% + D:15% + C:10% + S:10% = 100%
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-[#0f1420] text-slate-400 border-b border-[#1e2638] text-[11px] font-mono">
+              <tr>
+                <th className="py-2.5 px-4 font-semibold w-48">Evaluation Dimension</th>
+                {rankedIdeas.map((idea, idx) => {
+                  const isSelected = selectedIdeaId === idea.id;
+                  const isTop = topPick?.id === idea.id;
+                  return (
+                    <th
+                      key={idea.id || idx}
+                      className={`py-2.5 px-4 font-semibold min-w-[160px] ${
+                        isSelected ? 'bg-blue-950/20 text-blue-300' : ''
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="truncate">Idea {idx + 1}: {idea.title}</span>
+                        {isTop && (
+                          <span className="text-[9px] bg-emerald-500/20 text-emerald-400 px-1 py-0.2 rounded border border-emerald-500/30">
+                            TOP
+                          </span>
+                        )}
+                      </div>
+                    </th>
+                  );
+                })}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#1e2638] text-slate-300">
+              {CRITERIA.map((crit) => (
+                <tr key={crit.key} className="hover:bg-[#141b29] transition-colors">
+                  <td className="py-2.5 px-4 font-medium text-slate-300 whitespace-nowrap bg-[#0d121c]/50">
+                    <div className="flex items-center justify-between">
+                      <span>{crit.label}</span>
+                      <span className="text-[10px] font-mono text-slate-500">{crit.weight}</span>
+                    </div>
+                  </td>
+                  {rankedIdeas.map((idea, idx) => {
+                    let val = 5;
+                    if (crit.key === 'feasibility') val = idea.feasibility_score ?? idea.feasibilityScore ?? 5;
+                    else if (crit.key === 'innovation') val = idea.innovation_score ?? idea.innovationScore ?? 5;
+                    else if (crit.key === 'impact') val = idea.impact_score ?? idea.impactScore ?? 5;
+                    else if (crit.key === 'demo') val = idea.demo_score ?? idea.demoScore ?? 5;
+                    else if (crit.key === 'cost') val = idea.cost_score ?? idea.costScore ?? 5;
+                    else if (crit.key === 'scalability') val = idea.scalability_score ?? idea.scalabilityScore ?? 5;
+
+                    const isSelected = selectedIdeaId === idea.id;
+
+                    return (
+                      <td
+                        key={idea.id || idx}
+                        className={`py-2.5 px-4 font-mono text-xs ${
+                          isSelected ? 'bg-blue-950/10 font-bold text-blue-200' : ''
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span>{val}/10</span>
+                          <div className="w-16 h-1.5 rounded-full bg-[#1e2638] overflow-hidden hidden sm:block">
+                            <div
+                              className="h-full rounded-full bg-blue-500"
+                              style={{ width: `${Math.min(100, (val / 10) * 100)}%` }}
+                            />
+                          </div>
+                        </div>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+
+              {/* Total Row */}
+              <tr className="bg-[#0e1420] font-bold border-t-2 border-[#1e2638]">
+                <td className="py-3 px-4 text-slate-100 font-mono text-xs uppercase tracking-wider">
+                  Weighted Score
+                </td>
+                {rankedIdeas.map((idea, idx) => {
+                  const isSelected = selectedIdeaId === idea.id;
+                  const isTop = topPick?.id === idea.id;
+                  return (
+                    <td
+                      key={idea.id || idx}
+                      className={`py-3 px-4 font-mono text-sm ${
+                        isTop ? 'text-emerald-400' : 'text-slate-200'
+                      } ${isSelected ? 'bg-blue-950/20' : ''}`}
+                    >
+                      <span>{idea.calculatedTotal}</span>
+                      <span className="text-[10px] text-slate-500 font-normal"> / 100</span>
+                    </td>
+                  );
+                })}
+              </tr>
+
+              {/* Action / Selection Row */}
+              <tr className="bg-[#0d121c]">
+                <td className="py-3 px-4 text-slate-400 text-xs">Active Plan</td>
+                {rankedIdeas.map((idea, idx) => {
+                  const isSelected = selectedIdeaId === idea.id;
+                  return (
+                    <td key={idea.id || idx} className="py-3 px-4">
+                      <button
+                        onClick={() => onSelectIdea(idea.id)}
+                        className={`px-3 py-1 text-xs rounded transition-colors ${
+                          isSelected
+                            ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 font-semibold'
+                            : 'bg-[#1e2638] hover:bg-blue-600 hover:text-white text-slate-300 font-medium'
+                        }`}
+                      >
+                        {isSelected ? '✓ Selected' : 'Choose'}
+                      </button>
+                    </td>
+                  );
+                })}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Radar Chart + Trade-off Notes */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Radar Diagram */}
+        <div className="p-4 rounded-md bg-[#111622] border border-[#1e2638]">
+          <div className="flex items-center justify-between mb-3 border-b border-[#1e2638] pb-2">
+            <h4 className="text-xs font-semibold text-slate-200">
+              Dimensional Radar Profile
+            </h4>
+            <div className="flex items-center gap-3 text-[11px] font-mono">
+              {rankedIdeas.map((idea, i) => (
                 <div key={i} className="flex items-center gap-1.5 text-slate-300">
                   <span
-                    className="w-2.5 h-2.5 rounded-full"
-                    style={{ backgroundColor: COLORS[i % COLORS.length] }}
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: idea.color }}
                   />
                   <span>Idea {i + 1}</span>
                 </div>
@@ -130,20 +276,20 @@ export default function ComparisonChart({ ideas, onSelectIdea, selectedIdeaId })
             </div>
           </div>
 
-          <div className="h-[300px] w-full">
+          <div className="h-[280px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <RadarChart data={radarData}>
-                <PolarGrid stroke="#334155" />
-                <PolarAngleAxis dataKey="metric" stroke="#94a3b8" tick={{ fontSize: 11 }} />
-                <PolarRadiusAxis angle={30} domain={[0, 10]} stroke="#475569" />
-                {ideas.map((_, i) => (
+                <PolarGrid stroke="#1e2638" />
+                <PolarAngleAxis dataKey="metric" stroke="#64748b" tick={{ fontSize: 10 }} />
+                <PolarRadiusAxis angle={30} domain={[0, 10]} stroke="#2a3449" tick={{ fontSize: 9 }} />
+                {rankedIdeas.map((idea, i) => (
                   <Radar
                     key={i}
                     name={`Idea ${i + 1}`}
                     dataKey={`Idea ${i + 1}`}
-                    stroke={COLORS[i % COLORS.length]}
-                    fill={COLORS[i % COLORS.length]}
-                    fillOpacity={0.25}
+                    stroke={idea.color}
+                    fill={idea.color}
+                    fillOpacity={0.15}
                   />
                 ))}
               </RadarChart>
@@ -151,66 +297,36 @@ export default function ComparisonChart({ ideas, onSelectIdea, selectedIdeaId })
           </div>
         </div>
 
-        {/* Weighted Score Table */}
-        <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-lg flex flex-col justify-between">
+        {/* Trade-off Analysis */}
+        <div className="p-4 rounded-md bg-[#111622] border border-[#1e2638] space-y-3 flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-semibold text-white">Weighted Evaluation Ranking</h4>
-              <span className="text-[11px] text-slate-500 font-mono">Formula: F:25% I:20% Imp:20% D:15% C:10% S:10%</span>
-            </div>
-
-            <div className="space-y-3">
-              {ranked.map((idea, idx) => (
+            <h4 className="text-xs font-semibold text-slate-200 border-b border-[#1e2638] pb-2 mb-3">
+              Trade-Off Breakdown
+            </h4>
+            <div className="space-y-2.5">
+              {rankedIdeas.map((idea, idx) => (
                 <div
                   key={idea.id || idx}
-                  className={`p-3 rounded-xl border transition-all ${
-                    selectedIdeaId === idea.id
-                      ? 'bg-indigo-950/30 border-indigo-500/50'
-                      : 'bg-slate-950/60 border-slate-800 hover:border-slate-700'
-                  }`}
+                  className="p-3 rounded bg-[#0d121c] border border-[#1e2638] text-xs space-y-1"
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className="w-5 h-5 rounded-full bg-slate-800 text-[11px] font-bold flex items-center justify-center text-slate-300">
-                        #{idx + 1}
-                      </span>
-                      <span className="text-xs font-semibold text-white truncate max-w-[200px] sm:max-w-[260px]">
-                        {idea.title}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <div className="text-right">
-                        <span className="text-xs font-bold text-indigo-400 font-mono">
-                          {idea.calculatedTotal}
-                        </span>
-                        <span className="text-[10px] text-slate-500">/100</span>
-                      </div>
-                      <button
-                        onClick={() => onSelectIdea(idea.id)}
-                        className={`px-2.5 py-1 text-[11px] font-medium rounded-lg transition-colors ${
-                          selectedIdeaId === idea.id
-                            ? 'bg-emerald-600/30 text-emerald-400 border border-emerald-500/40'
-                            : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
-                        }`}
-                      >
-                        {selectedIdeaId === idea.id ? 'Selected' : 'Select'}
-                      </button>
-                    </div>
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-slate-200">
+                      Idea {idx + 1}: {idea.title}
+                    </span>
+                    <span className="text-[11px] font-mono text-slate-400">
+                      Score: {idea.calculatedTotal}
+                    </span>
                   </div>
-
-                  {/* Micro score breakdown bar */}
-                  <div className="mt-2 grid grid-cols-6 gap-1 text-[10px] text-slate-400 text-center font-mono">
-                    <div className="bg-slate-900 py-0.5 rounded">F:{idea.feasibility_score || idea.feasibilityScore}</div>
-                    <div className="bg-slate-900 py-0.5 rounded">I:{idea.innovation_score || idea.innovationScore}</div>
-                    <div className="bg-slate-900 py-0.5 rounded">Imp:{idea.impact_score || idea.impactScore}</div>
-                    <div className="bg-slate-900 py-0.5 rounded">D:{idea.demo_score || idea.demoScore}</div>
-                    <div className="bg-slate-900 py-0.5 rounded">C:{idea.cost_score || idea.costScore}</div>
-                    <div className="bg-slate-900 py-0.5 rounded">S:{idea.scalability_score || idea.scalabilityScore}</div>
-                  </div>
+                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                    {idea.concept}
+                  </p>
                 </div>
               ))}
             </div>
+          </div>
+
+          <div className="p-3 rounded bg-[#0e1420] border border-[#1e2638] text-[11px] text-slate-400">
+            <strong className="text-slate-300">Decision Rule:</strong> The scoring engine prioritizes feasibility and demo potential (40% total) to ensure hackathon working code viability over theoretical innovation.
           </div>
         </div>
       </div>

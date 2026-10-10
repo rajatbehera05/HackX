@@ -29,6 +29,10 @@ export const errorHandler = (err, req, res, next) => {
     });
   }
 
+  if (process.env.NODE_ENV === 'production' && status === 500) {
+    message = 'An unexpected internal server error occurred.';
+  }
+
   return res.status(status).json({
     error: message,
     code: err.code || 'INTERNAL_ERROR',

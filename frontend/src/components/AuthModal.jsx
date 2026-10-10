@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { X, Lock, Mail, User, Sparkles, Loader2, AlertCircle } from 'lucide-react';
+import { X, Lock, Mail, User, KeyRound, Loader2, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function AuthModal({ onClose }) {
-  const { signIn, signUp, isSupabaseAuthAvailable } = useAuth();
+  const { signIn, signUp, continueAsGuest, isSupabaseAuthAvailable } = useAuth();
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -31,82 +31,83 @@ export default function AuthModal({ onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in">
-      <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-6 relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs">
+      <div className="w-full max-w-sm bg-[#111622] border border-[#1e2638] rounded-md shadow-2xl p-6 relative text-slate-100">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
+          className="absolute top-4 right-4 p-1 text-slate-400 hover:text-white rounded hover:bg-[#1a2130] transition-colors"
+          title="Close"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4" />
         </button>
 
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
-            <Sparkles className="w-5 h-5" />
+        <div className="flex items-center gap-2.5 mb-5 pb-3 border-b border-[#1e2638]">
+          <div className="w-8 h-8 rounded bg-[#161c2a] border border-[#232d42] flex items-center justify-center text-blue-400">
+            <KeyRound className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-white">
-              {isSignUp ? 'Create HackX Account' : 'Welcome to HackX'}
+            <h3 className="text-sm font-bold text-slate-100">
+              {isSignUp ? 'Create Workspace Account' : 'Sign In to HackX'}
             </h3>
-            <p className="text-xs text-slate-400">
+            <p className="text-[11px] text-slate-400">
               {isSupabaseAuthAvailable
-                ? 'Save and sync your projects across devices'
-                : 'Running in Local Dev / Demo Mode'}
+                ? 'Sync and access your solution blueprints'
+                : 'Local Development / Preview Session'}
             </p>
           </div>
         </div>
 
         {error && (
-          <div className="mb-4 p-3 rounded-lg bg-red-950/50 border border-red-800/50 flex items-start gap-2 text-xs text-red-300">
+          <div className="mb-4 p-2.5 rounded bg-red-950/40 border border-red-800/40 flex items-start gap-2 text-xs text-red-300">
             <AlertCircle className="w-4 h-4 shrink-0 text-red-400 mt-0.5" />
             <span>{error}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3.5">
           {isSignUp && (
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">Full Name</label>
+              <label className="block text-[11px] font-medium text-slate-300 mb-1">Full Name</label>
               <div className="relative">
-                <User className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+                <User className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-2.5" />
                 <input
                   type="text"
                   required
                   placeholder="e.g. Alex Chen"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full pl-8 pr-3 py-1.5 bg-[#0b0f17] border border-[#1e2638] rounded text-xs text-white placeholder-slate-600 focus:outline-none focus:border-blue-500"
                 />
               </div>
             </div>
           )}
 
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">Email Address</label>
+            <label className="block text-[11px] font-medium text-slate-300 mb-1">Email Address</label>
             <div className="relative">
-              <Mail className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+              <Mail className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-2.5" />
               <input
                 type="email"
                 required
-                placeholder="developer@team.hack"
+                placeholder="developer@hackathon.org"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500"
+                className="w-full pl-8 pr-3 py-1.5 bg-[#0b0f17] border border-[#1e2638] rounded text-xs text-white placeholder-slate-600 focus:outline-none focus:border-blue-500"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">Password</label>
+            <label className="block text-[11px] font-medium text-slate-300 mb-1">Password</label>
             <div className="relative">
-              <Lock className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+              <Lock className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-2.5" />
               <input
                 type="password"
                 required
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500"
+                className="w-full pl-8 pr-3 py-1.5 bg-[#0b0f17] border border-[#1e2638] rounded text-xs text-white placeholder-slate-600 focus:outline-none focus:border-blue-500"
               />
             </div>
           </div>
@@ -114,24 +115,37 @@ export default function AuthModal({ onClose }) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-medium text-sm rounded-lg flex items-center justify-center gap-2 transition-colors mt-2"
+            className="w-full py-2 px-3 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-semibold text-xs rounded flex items-center justify-center gap-1.5 transition-colors mt-2"
           >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-            <span>{isSignUp ? 'Sign Up' : 'Sign In'}</span>
+            {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+            <span>{isSignUp ? 'Create Account' : 'Authenticate'}</span>
           </button>
         </form>
 
-        <div className="mt-4 pt-4 border-t border-slate-800 text-center">
+        <div className="mt-4 pt-3 border-t border-[#1e2638] space-y-1.5 text-center">
           <button
             type="button"
             onClick={() => {
               setIsSignUp(!isSignUp);
               setError(null);
             }}
-            className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
+            className="text-[11px] text-blue-400 hover:text-blue-300 transition-colors block w-full text-center"
           >
-            {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
+            {isSignUp ? 'Already registered? Sign In' : 'No account? Create One'}
           </button>
+
+          {!isSupabaseAuthAvailable && (
+            <button
+              type="button"
+              onClick={() => {
+                continueAsGuest?.();
+                onClose();
+              }}
+              className="text-[11px] font-mono text-slate-400 hover:text-slate-200 transition-colors block w-full text-center pt-1"
+            >
+              Continue as Guest Developer (Dev Mode)
+            </button>
+          )}
         </div>
       </div>
     </div>

@@ -5,8 +5,18 @@ dotenv.config();
 const supabaseUrl = process.env.SUPABASE_URL || '';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || '';
 
-if (!supabaseUrl || !supabaseServiceKey) {
-  console.warn('⚠️ [Supabase] SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing from environment variables.');
+export const isSupabaseConfigured = () => {
+  return Boolean(
+    process.env.SUPABASE_URL &&
+    process.env.SUPABASE_URL !== 'https://placeholder.supabase.co' &&
+    process.env.SUPABASE_URL !== 'https://your-project-id.supabase.co' &&
+    (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY) &&
+    process.env.SUPABASE_SERVICE_ROLE_KEY !== 'your_supabase_service_role_key_here'
+  );
+};
+
+if (!isSupabaseConfigured()) {
+  console.warn('⚠️ [Supabase] SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing from environment variables. Running in Dev Memory Store mode.');
 }
 
 // Service role client bypasses RLS on backend when necessary, or can act on behalf of user

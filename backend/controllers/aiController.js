@@ -1,20 +1,21 @@
 import { aiService } from '../services/ai/aiService.js';
 import { memoryStore } from '../utils/memoryStore.js';
+import { isSupabaseConfigured } from '../utils/supabaseClient.js';
 import { SCORING_WEIGHTS, calculateWeightedScore } from '../services/ai/scoringService.js';
 
-const isSupabaseConfigured = () => {
-  return Boolean(
-    process.env.SUPABASE_URL &&
-    process.env.SUPABASE_URL !== 'https://placeholder.supabase.co' &&
-    (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY)
-  );
-};
-
-// Helper to fetch full project context
+// Helper to fetch full project context with authorization verification
 async function getFullProjectContext(req, projectId) {
-  if (isSupabaseConfigured() && req.supabase) {
-    const { data: project } = await req.supabase.from('projects').select('*').eq('id', projectId).single();
-    if (!project) return null;
+  const userId = req.user?.id;
+
+  if (isSupabaseConfigured()) {
+    if (!req.supabase) {
+      const err = new Error('Authentication required for Supabase operations.');
+      err.status = 401;
+      throw err;
+    }
+
+    const { data: project, error: pError } = await req.supabase.from('projects').select('*').eq('id', projectId).single();
+    if (pError || !project) return null;
 
     const { data: analyses } = await req.supabase.from('analyses').select('*').eq('project_id', projectId).order('created_at', { ascending: false }).limit(1);
     const { data: ideas } = await req.supabase.from('ideas').select('*').eq('project_id', projectId);
@@ -28,7 +29,8 @@ async function getFullProjectContext(req, projectId) {
     };
   }
 
-  return memoryStore.getProject(projectId);
+  // Dev In-Memory Mode with ownership validation
+  return memoryStore.getProject(projectId, userId);
 }
 
 // 1. Analyze Problem Statement
@@ -40,7 +42,11 @@ export const analyzeProblem = async (req, res, next) => {
 
     const analysis = await aiService.analyzeProblem(project);
 
-    if (isSupabaseConfigured() && req.supabase) {
+    if (isSupabaseConfigured()) {
+      if (!req.supabase) {
+        return res.status(401).json({ error: 'Authentication required for Supabase operations.' });
+      }
+
       const { data, error } = await req.supabase
         .from('analyses')
         .insert({
@@ -64,6 +70,7 @@ export const analyzeProblem = async (req, res, next) => {
       return res.json({ analysis: data });
     }
 
+    // Dev In-Memory Mode
     const saved = memoryStore.saveAnalysis(id, analysis);
     return res.json({ analysis: saved });
   } catch (err) {
@@ -80,7 +87,11 @@ export const generateIdeas = async (req, res, next) => {
 
     const ideas = await aiService.generateIdeas(project, project.analysis);
 
-    if (isSupabaseConfigured() && req.supabase) {
+    if (isSupabaseConfigured()) {
+      if (!req.supabase) {
+        return res.status(401).json({ error: 'Authentication required for Supabase operations.' });
+      }
+
       // Clear previous ideas if regenerating
       await req.supabase.from('ideas').delete().eq('project_id', id);
 
@@ -89,17 +100,17 @@ export const generateIdeas = async (req, res, next) => {
         title: idea.title,
         concept: idea.concept,
         description: idea.description,
-        how_it_solves: idea.howItSolves,
+        how_it_solves: idea.howItSolves || idea.how_it_solves,
         features: idea.features,
-        technical_approach: idea.technicalApproach,
-        required_tech: idea.requiredTech,
-        innovation_score: idea.innovationScore,
-        feasibility_score: idea.feasibilityScore,
-        complexity_score: idea.complexityScore,
-        cost_score: idea.costScore,
-        impact_score: idea.impactScore,
-        demo_score: idea.demoScore,
-        scalability_score: idea.scalabilityScore,
+        technical_approach: idea.technicalApproach || idea.technical_approach,
+        required_tech: idea.requiredTech || idea.required_tech,
+        innovation_score: idea.innovationScore ?? idea.innovation_score,
+        feasibility_score: idea.feasibilityScore ?? idea.feasibility_score,
+        complexity_score: idea.complexityScore ?? idea.complexity_score,
+        cost_score: idea.costScore ?? idea.cost_score,
+        impact_score: idea.impactScore ?? idea.impact_score,
+        demo_score: idea.demoScore ?? idea.demo_score,
+        scalability_score: idea.scalabilityScore ?? idea.scalability_score,
         is_recommended: idea.is_recommended,
         recommendation_reason: idea.recommendation_reason,
       }));
@@ -113,6 +124,7 @@ export const generateIdeas = async (req, res, next) => {
       return res.json({ ideas: data });
     }
 
+    // Dev In-Memory Mode
     const saved = memoryStore.saveIdeas(id, ideas);
     return res.json({ ideas: saved });
   } catch (err) {
@@ -163,7 +175,14 @@ export const selectIdea = async (req, res, next) => {
     const { ideaId } = req.body;
     if (!ideaId) return res.status(400).json({ error: 'ideaId is required' });
 
-    if (isSupabaseConfigured() && req.supabase) {
+    const project = await getFullProjectContext(req, id);
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+
+    if (isSupabaseConfigured()) {
+      if (!req.supabase) {
+        return res.status(401).json({ error: 'Authentication required for Supabase operations.' });
+      }
+
       const { data, error } = await req.supabase
         .from('selected_solutions')
         .upsert(
@@ -177,6 +196,7 @@ export const selectIdea = async (req, res, next) => {
       return res.json({ selectedSolution: data });
     }
 
+    // Dev In-Memory Mode
     const saved = memoryStore.saveSolutionPart(id, { idea_id: ideaId });
     return res.json({ selectedSolution: saved });
   } catch (err) {
@@ -197,7 +217,11 @@ export const generateDifferentiators = async (req, res, next) => {
 
     const diffData = await aiService.generateDifferentiators(project, idea);
 
-    if (isSupabaseConfigured() && req.supabase) {
+    if (isSupabaseConfigured()) {
+      if (!req.supabase) {
+        return res.status(401).json({ error: 'Authentication required for Supabase operations.' });
+      }
+
       const { data, error } = await req.supabase
         .from('selected_solutions')
         .upsert(
@@ -217,6 +241,7 @@ export const generateDifferentiators = async (req, res, next) => {
       return res.json({ differentiators: diffData, selectedSolution: data });
     }
 
+    // Dev In-Memory Mode
     const updated = memoryStore.saveSolutionPart(id, {
       idea_id: idea.id,
       differentiators: diffData.differentiators,
@@ -235,13 +260,17 @@ export const generateTechStack = async (req, res, next) => {
     const project = await getFullProjectContext(req, id);
     if (!project) return res.status(404).json({ error: 'Project not found' });
 
-    const selectedIdeaId = project.selectedSolution?.idea_id || project.ideas?.[0]?.id;
+    const selectedIdeaId = req.body?.ideaId || project.selectedSolution?.idea_id || project.ideas?.[0]?.id;
     const idea = (project.ideas || []).find((i) => i.id === selectedIdeaId) || project.ideas?.[0];
     if (!idea) return res.status(400).json({ error: 'Please generate and select an idea first' });
 
     const stackData = await aiService.recommendTechStack(project, idea);
 
-    if (isSupabaseConfigured() && req.supabase) {
+    if (isSupabaseConfigured()) {
+      if (!req.supabase) {
+        return res.status(401).json({ error: 'Authentication required for Supabase operations.' });
+      }
+
       const { data, error } = await req.supabase
         .from('selected_solutions')
         .upsert(
@@ -260,6 +289,7 @@ export const generateTechStack = async (req, res, next) => {
       return res.json({ techStack: stackData, selectedSolution: data });
     }
 
+    // Dev In-Memory Mode
     const updated = memoryStore.saveSolutionPart(id, {
       idea_id: idea.id,
       tech_stack: stackData,
@@ -277,14 +307,18 @@ export const generateArchitecture = async (req, res, next) => {
     const project = await getFullProjectContext(req, id);
     if (!project) return res.status(404).json({ error: 'Project not found' });
 
-    const selectedIdeaId = project.selectedSolution?.idea_id || project.ideas?.[0]?.id;
+    const selectedIdeaId = req.body?.ideaId || project.selectedSolution?.idea_id || project.ideas?.[0]?.id;
     const idea = (project.ideas || []).find((i) => i.id === selectedIdeaId) || project.ideas?.[0];
     if (!idea) return res.status(400).json({ error: 'Please generate and select an idea first' });
 
-    const techStack = project.selectedSolution?.tech_stack || project.selectedSolution?.techStack || {};
+    const techStack = req.body?.techStack || project.selectedSolution?.tech_stack || project.selectedSolution?.techStack || {};
     const archData = await aiService.generateArchitecture(project, idea, techStack);
 
-    if (isSupabaseConfigured() && req.supabase) {
+    if (isSupabaseConfigured()) {
+      if (!req.supabase) {
+        return res.status(401).json({ error: 'Authentication required for Supabase operations.' });
+      }
+
       const { data, error } = await req.supabase
         .from('selected_solutions')
         .upsert(
@@ -303,6 +337,7 @@ export const generateArchitecture = async (req, res, next) => {
       return res.json({ architecture: archData, selectedSolution: data });
     }
 
+    // Dev In-Memory Mode
     const updated = memoryStore.saveSolutionPart(id, {
       idea_id: idea.id,
       architecture: archData,
@@ -320,13 +355,17 @@ export const generateRoadmap = async (req, res, next) => {
     const project = await getFullProjectContext(req, id);
     if (!project) return res.status(404).json({ error: 'Project not found' });
 
-    const selectedIdeaId = project.selectedSolution?.idea_id || project.ideas?.[0]?.id;
+    const selectedIdeaId = req.body?.ideaId || project.selectedSolution?.idea_id || project.ideas?.[0]?.id;
     const idea = (project.ideas || []).find((i) => i.id === selectedIdeaId) || project.ideas?.[0];
     if (!idea) return res.status(400).json({ error: 'Please generate and select an idea first' });
 
     const roadmapData = await aiService.generateRoadmap(project, idea);
 
-    if (isSupabaseConfigured() && req.supabase) {
+    if (isSupabaseConfigured()) {
+      if (!req.supabase) {
+        return res.status(401).json({ error: 'Authentication required for Supabase operations.' });
+      }
+
       const { data, error } = await req.supabase
         .from('selected_solutions')
         .upsert(
@@ -345,6 +384,7 @@ export const generateRoadmap = async (req, res, next) => {
       return res.json({ roadmap: roadmapData, selectedSolution: data });
     }
 
+    // Dev In-Memory Mode
     const updated = memoryStore.saveSolutionPart(id, {
       idea_id: idea.id,
       roadmap: roadmapData,
@@ -362,14 +402,18 @@ export const generatePitch = async (req, res, next) => {
     const project = await getFullProjectContext(req, id);
     if (!project) return res.status(404).json({ error: 'Project not found' });
 
-    const selectedIdeaId = project.selectedSolution?.idea_id || project.ideas?.[0]?.id;
+    const selectedIdeaId = req.body?.ideaId || project.selectedSolution?.idea_id || project.ideas?.[0]?.id;
     const idea = (project.ideas || []).find((i) => i.id === selectedIdeaId) || project.ideas?.[0];
     if (!idea) return res.status(400).json({ error: 'Please generate and select an idea first' });
 
-    const differentiators = project.selectedSolution?.differentiators || [];
+    const differentiators = req.body?.differentiators || project.selectedSolution?.differentiators || [];
     const pitchData = await aiService.generatePitch(project, idea, differentiators);
 
-    if (isSupabaseConfigured() && req.supabase) {
+    if (isSupabaseConfigured()) {
+      if (!req.supabase) {
+        return res.status(401).json({ error: 'Authentication required for Supabase operations.' });
+      }
+
       const { data, error } = await req.supabase
         .from('selected_solutions')
         .upsert(
@@ -388,6 +432,7 @@ export const generatePitch = async (req, res, next) => {
       return res.json({ pitch: pitchData, selectedSolution: data });
     }
 
+    // Dev In-Memory Mode
     const updated = memoryStore.saveSolutionPart(id, {
       idea_id: idea.id,
       pitch: pitchData,
@@ -405,13 +450,17 @@ export const recommendTeamRoles = async (req, res, next) => {
     const project = await getFullProjectContext(req, id);
     if (!project) return res.status(404).json({ error: 'Project not found' });
 
-    const selectedIdeaId = project.selectedSolution?.idea_id || project.ideas?.[0]?.id;
+    const selectedIdeaId = req.body?.ideaId || project.selectedSolution?.idea_id || project.ideas?.[0]?.id;
     const idea = (project.ideas || []).find((i) => i.id === selectedIdeaId) || project.ideas?.[0];
     if (!idea) return res.status(400).json({ error: 'Please generate and select an idea first' });
 
     const rolesData = await aiService.recommendTeamRoles(project, idea);
 
-    if (isSupabaseConfigured() && req.supabase) {
+    if (isSupabaseConfigured()) {
+      if (!req.supabase) {
+        return res.status(401).json({ error: 'Authentication required for Supabase operations.' });
+      }
+
       const { data, error } = await req.supabase
         .from('selected_solutions')
         .upsert(
@@ -430,6 +479,7 @@ export const recommendTeamRoles = async (req, res, next) => {
       return res.json({ teamRoles: rolesData, selectedSolution: data });
     }
 
+    // Dev In-Memory Mode
     const updated = memoryStore.saveSolutionPart(id, {
       idea_id: idea.id,
       team_roles: rolesData,

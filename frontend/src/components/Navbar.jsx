@@ -1,92 +1,96 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Sparkles, Terminal, FolderKanban, Plus, User, LogOut, CheckCircle2, AlertCircle } from 'lucide-react';
+import { FolderKanban, Plus, User, LogOut, Terminal } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import AuthModal from './AuthModal';
 
 export default function Navbar({ onNewProjectClick }) {
   const location = useLocation();
-  const { user, signOut, isSupabaseAuthAvailable } = useAuth();
+  const { user, signOut } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full border-b border-slate-800 bg-slate-950/80 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 via-indigo-600 to-purple-700 flex items-center justify-center shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition-transform">
-              <Sparkles className="w-5 h-5 text-white" />
-            </div>
-            <div>
+      <header className="sticky top-0 z-40 w-full border-b border-[#1e2638] bg-[#0b0f17]/95 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-13 flex items-center justify-between">
+          {/* Logo & Brand */}
+          <div className="flex items-center gap-6">
+            <Link to="/" className="flex items-center gap-2.5 group">
+              <div className="w-7 h-7 rounded-md bg-[#1e2638] border border-[#2d3852] flex items-center justify-center text-blue-400 group-hover:border-blue-500/50 transition-colors">
+                <Terminal className="w-4 h-4" />
+              </div>
               <div className="flex items-center gap-2">
-                <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
-                  Hack<span className="text-indigo-400">X</span>
+                <span className="text-sm font-bold tracking-tight text-slate-100 font-mono">
+                  Hack<span className="text-blue-400">X</span>
                 </span>
-                <span className="px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded">
+                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded border border-[#232c3f] bg-[#111724] text-slate-400">
                   v1.0
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 hidden sm:block">AI Hackathon Solution Engine</p>
-            </div>
-          </Link>
-
-          {/* Nav Links */}
-          <nav className="flex items-center gap-1 sm:gap-2">
-            <Link
-              to="/dashboard"
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                location.pathname === '/dashboard'
-                  ? 'bg-slate-800 text-white'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
-              }`}
-            >
-              <FolderKanban className="w-4 h-4" />
-              <span>Projects</span>
             </Link>
 
+            {/* Nav links */}
+            <nav className="hidden md:flex items-center gap-1 text-xs">
+              <Link
+                to="/dashboard"
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md font-medium transition-colors ${
+                  location.pathname.startsWith('/dashboard') || location.pathname.startsWith('/project')
+                    ? 'bg-[#161c2a] text-slate-100 border border-[#232d42]'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-[#131722]'
+                }`}
+              >
+                <FolderKanban className="w-3.5 h-3.5" />
+                <span>Projects</span>
+              </Link>
+            </nav>
+          </div>
+
+          {/* Right Action Controls */}
+          <div className="flex items-center gap-2.5">
             {onNewProjectClick && (
               <button
                 onClick={onNewProjectClick}
-                className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm shadow-indigo-600/30 transition-all hover:shadow-indigo-500/40"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white shadow-xs transition-colors"
               >
-                <Plus className="w-4 h-4" />
-                <span className="hidden sm:inline">New Project</span>
+                <Plus className="w-3.5 h-3.5" />
+                <span>New Project</span>
               </button>
             )}
 
-            {/* Auth / User status */}
-            <div className="h-5 w-px bg-slate-800 mx-1 sm:mx-2" />
+            <div className="h-4 w-px bg-[#1e2638]" />
 
+            {/* Auth status */}
             {user ? (
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-300">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="max-w-[100px] sm:max-w-[140px] truncate">
+              <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2 px-2.5 py-1 rounded-md bg-[#111622] border border-[#1e2638] text-xs text-slate-300">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  <span className="max-w-[120px] truncate font-mono text-[11px]">
                     {user.user_metadata?.name || user.email?.split('@')[0] || 'User'}
                   </span>
                   {user.isGuest && (
-                    <span className="text-[10px] bg-slate-800 text-slate-400 px-1 rounded">Dev</span>
+                    <span className="text-[9px] font-mono bg-[#1a2130] text-slate-400 px-1 py-0.5 rounded">
+                      GUEST
+                    </span>
                   )}
                 </div>
                 <button
                   onClick={signOut}
                   title="Sign Out"
-                  className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors"
+                  className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-[#161c2a] rounded-md transition-colors"
                 >
-                  <LogOut className="w-4 h-4" />
+                  <LogOut className="w-3.5 h-3.5" />
                 </button>
               </div>
             ) : (
               <button
                 onClick={() => setShowAuthModal(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-300 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg transition-colors"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-[#111622] hover:bg-[#161c2a] border border-[#1e2638] rounded-md transition-colors"
               >
-                <User className="w-4 h-4" />
+                <User className="w-3.5 h-3.5" />
                 <span>Sign In</span>
               </button>
             )}
-          </nav>
+          </div>
         </div>
       </header>
 
